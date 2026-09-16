@@ -12,10 +12,8 @@ public enum EstadoCelda
 
 public class GameManager : MonoBehaviour
 {
-    // ============================================================
-    // COSAS QUE CONFIGURAS ANTES DE JUGAR (Inspector de Unity)
-    // No hace falta tocarlas mientras el juego esta corriendo.
-    // ============================================================
+    // COSAS QUE CONFIGURAS ANTES DE JUGAR 
+  
 
     [Header("Configuracion inicial (no cambia en ejecucion)")]
     [FormerlySerializedAs("width")]
@@ -25,8 +23,7 @@ public class GameManager : MonoBehaviour
     public int alto = 30;    // casillas de abajo hacia arriba
 
     // Que tan rapido cae la arena.
-    // 0.1 = espera 0.1 segundos entre cada caida (mas lento).
-    // 0.02 = casi no espera (mas rapido).
+    // 0.1 = espera 0.1 segundos entre cada caida.
     // No es gravedad de verdad: solo es "cada cuanto avanza un pasito".
     [FormerlySerializedAs("tiempoEntreGeneraciones")]
     [FormerlySerializedAs("updateTime")]
@@ -40,12 +37,8 @@ public class GameManager : MonoBehaviour
     public Color colorArena = new Color(0.76f, 0.60f, 0.30f, 1f); // color de la arena
     public Color colorVacio = new Color(0.96f, 0.94f, 0.90f, 1f); // color del fondo
 
-    // ============================================================
-    // COSAS QUE VAN CAMBIANDO MIENTRAS JUEGAS
-    // ============================================================
-
+    // COSAS QUE VAN CAMBIANDO MIENTRAS JUEGA
     // El tablero. Cada posicion [columna, fila] dice si hay arena o no.
-    // En Conway aca habia celulas vivas o muertas. Ahora es arena o vacio.
     private EstadoCelda[,] grilla;
 
     // Reloj chiquito. Suma tiempo hasta que llega a tiempoEntrePasos
@@ -55,7 +48,7 @@ public class GameManager : MonoBehaviour
     // Otro reloj, para soltar arena sola cuando no hay click.
     private float temporizadorArenaAutomatica;
 
-    // Cuantas veces ya avanzo la simulacion. Se usa para el mensaje de consola.
+    // Cuantas veces ya avanzo la simulacion. 
     private int generacionActual;
 
     // De que columna esta cayendo la arena.
@@ -67,13 +60,10 @@ public class GameManager : MonoBehaviour
     // una casilla del tablero = un puntito de color.
     private Texture2D textura;
 
-    // ============================================================
-    // START — se ejecuta UNA vez, cuando apretas Play
-    //
+    // START se ejecuta UNA vez, cuando apretas Play
     // En Conway: armaba el dibujo y ponia celulas vivas al azar.
     // Aca: arma el dibujo igual, deja el tablero vacio y tira
     // un granito de arena desde arriba para que se vea algo.
-    // ============================================================
     void Start()
     {
         // Creamos el tablero con el ancho y alto que pusimos arriba.
@@ -81,9 +71,8 @@ public class GameManager : MonoBehaviour
         generacionActual = 0;
         columnaSeleccionada = -1; // nadie clickeo todavia
 
-        // Las teclas P (pausa), E (borrar) y R (reiniciar) las sigue
-        // avisando el InputManager. El click del mouse lo leemos nosotros
-        // mas abajo, en Update.
+        // Las teclas P (pausa), E (borrar) y R (reiniciar) 
+        // avisando el InputManager. El click del mouse lo leemos nosotros mas abajo, en Update.
         if (InputManager.Instance != null)
         {
             InputManager.Instance.OnPause += AlternarPausa;
@@ -99,21 +88,14 @@ public class GameManager : MonoBehaviour
 
         // Para que al dar Play ya se vea arena:
         // elijo una columna al azar y pongo un grano ARRIBA.
-        // Importante:
-        //   fila 0        = el piso (abajo)
-        //   fila alto - 1 = el techo (arriba)
         int columnaInicial = Random.Range(0, ancho);
         grilla[columnaInicial, alto - 1] = EstadoCelda.Arena;
     }
-
-    // ============================================================
-    // UPDATE — se ejecuta TODO el tiempo, muchas veces por segundo
-    //
+    // UPDATE  se ejecuta TODO el tiempo, muchas veces por segundo
     // Hace 3 cosas, siempre en este orden:
     // 1) mira si estas haciendo click
     // 2) dibuja el tablero
     // 3) de vez en cuando deja caer la arena un pasito
-    // ============================================================
     void Update()
     {
         // 1) Si hay click, recordamos en que columna fue.
@@ -123,7 +105,7 @@ public class GameManager : MonoBehaviour
         DibujarGrilla();
 
         // 3) Esperamos un poquito y recien ahi movemos la arena.
-        //    Asi no cae a mil por hora. Si bajas tiempoEntrePasos, cae mas rapido.
+        //    Asi no cae a mil por hora. Si se baja  tiempoEntrePasos, cae mas rapido.
         temporizador += Time.deltaTime; // Time.deltaTime = cuanto tardo este frame
         if (temporizador >= tiempoEntrePasos)
         {
@@ -140,34 +122,14 @@ public class GameManager : MonoBehaviour
             temporizador = 0f;
         }
     }
-
-    // ============================================================
-    // STEP — aca es donde la arena CAE
-    //
+    // STEP  aca es donde la arena CAE
+   
     // En Conway, para cada casilla se miraban las 8 de alrededor
     // (arriba, abajo, costados y esquinas) y se CONTABAN cuantas
     // estaban vivas. Con ese numero se decidia si nacia o moria.
-    //
+   
     // Aca tambien miramos las casillas de alrededor, pero no
-    // contamos nada. De esas 8 solo nos importan 3:
-    //
-    //                    [arriba no nos sirve]
-    //   [abajo-izquierda]   [ABAJO]   [abajo-derecha]
-    //
-    // Con esas 3 decidimos a donde se mueve el grano.
-    //
-    // POR QUE RECORREMOS DE ABAJO HACIA ARRIBA:
-    // Imagina que un grano esta en la fila 10. Si primero miramos
-    // los de arriba, ese grano baja a la fila 9... y como todavia
-    // no pasamos por la 9, lo volvemos a mover, y otra vez, y otra
-    // vez, y llega al piso de un solo golpe. Se veria como un
-    // teletransporte.
-    //
-    // Si primero movemos los de ABAJO, el que acaba de bajar ya
-    // "tuvo su turno" y no se mueve de nuevo hasta el proximo Step.
-    // Cada grano baja UNA casilla por vez. En Conway no hacia falta
-    // este orden porque se usaba una copia del tablero.
-    // ============================================================
+    // contamos nada. De esas 8 solo nos importan 3 con esas 3 decidimos a donde se mueve el grano.
     void Step()
     {
         generacionActual++;
@@ -188,11 +150,9 @@ public class GameManager : MonoBehaviour
                 int diagIzqX = x - 1;
                 int diagDerX = x + 1;
 
-                // Antes de mirar una casilla, hay que preguntar
-                // si existe. Si el grano ya esta en el piso,
+                // Antes de mirar una casilla, hay que preguntar si existe. Si el grano ya esta en el piso,
                 // "abajo" quedaria fuera del tablero y el juego se romperia.
-                // Si esta fuera, la tratamos como ocupada: la arena
-                // no puede atravesar el piso ni las paredes.
+                // Si esta fuera, la tratamos como ocupada la arena no puede atravesar el piso ni las paredes.
                 bool abajoLibre = EstaVacia(abajoX, abajoY);
                 bool izqLibre = EstaVacia(diagIzqX, abajoY);
                 bool derLibre = EstaVacia(diagDerX, abajoY);
@@ -231,20 +191,18 @@ public class GameManager : MonoBehaviour
 
                 // Regla 3: las tres casillas de abajo estan ocupadas.
                 // El grano se queda quieto. Asi se va apilando
-                // y se forma el monticulo de arena.
             }
         }
     }
 
-    // ============================================================
-    // CLICK — elige desde que COLUMNA cae la arena
-    //
+    // CLICK elige desde que COLUMNA cae la arena
+   
     // El mouse te da una posicion en la pantalla (por ejemplo
     // "pixel 800, 400"). El tablero usa otros numeros:
     // columna 0, 1, 2... y fila 0, 1, 2...
     // Hay que traducir el click de "donde esta el mouse en la
     // pantalla" a "que casilla del tablero es esa".
-    // ============================================================
+   
     void LeerClickDelMouse()
     {
         // Si no hay mouse, no hacemos nada.
@@ -303,7 +261,7 @@ public class GameManager : MonoBehaviour
 
     // Recorre el tablero y pinta cada casilla:
     // arena = colorArena, vacio = colorVacio.
-    // Al final avisamos a Unity "ya podes mostrar esto en pantalla".
+    // "ya podes mostrar esto en pantalla".
     void DibujarGrilla()
     {
         for (int y = 0; y < alto; y++)
@@ -315,11 +273,11 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // Si te olvidás de esta linea, el tablero no se actualiza en pantalla.
+       
         textura.Apply();
     }
 
-    // Pregunta: esta casilla existe Y esta vacia?
+    // Esta casilla existe Y esta vacia?
     // Primero miramos si esta dentro del tablero.
     // Si preguntas grilla[-1, 0] el juego se rompe, por eso el orden importa.
     bool EstaVacia(int x, int y)

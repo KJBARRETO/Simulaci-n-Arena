@@ -13,7 +13,7 @@ public class InputManager : MonoBehaviour
     public event Action<Vector2> OnCameraMove;
     public event Action<float> OnCameraZoom;
 
-    // Eventos de gameplay (mismos nombres que en Conway para no romper suscriptores)
+    // Eventos de gameplay 
     public event Action OnPause;
     public event Action OnRestart;
     public event Action OnClear;
