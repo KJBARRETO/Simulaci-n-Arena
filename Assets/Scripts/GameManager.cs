@@ -78,7 +78,6 @@ public class GameManager : MonoBehaviour
         {
             InputManager.Instance.OnPause += AlternarPausa;
             InputManager.Instance.OnRestart += ReiniciarSimulacion;
-            InputManager.Instance.OnClear += LimpiarSimulacion;
             InputManager.Instance.OnToggleCell += PonerArenaEnMouse;
             InputManager.Instance.OnAutoSim += AlternarAutomatica;
         }
@@ -308,18 +307,7 @@ public class GameManager : MonoBehaviour
         Debug.Log(enabled ? "Simulaci?n reanudada" : "Simulaci?n pausada");
     }
 
-    // Tecla E: borra toda la arena.
-    void LimpiarSimulacion()
-    {
-        VaciarGrilla();
-        columnaSeleccionada = -1;
-        simulacionAutomatica = false;
-        generacionActual = 0;
-        temporizador = 0f;
-        Debug.Log("Limpiando simulaci?n...");
-    }
-
-    // Tecla R: borra todo y tira un grano nuevo desde arriba.
+    // Tecla R: borra todo y vuelve a cero.
     void ReiniciarSimulacion()
     {
         VaciarGrilla();

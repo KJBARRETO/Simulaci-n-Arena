@@ -8,14 +8,13 @@ public class InputManager : MonoBehaviour
 
     private PlayerController controls;
 
-    // Eventos de c·mara
+    // Eventos de cùmara
     public event Action<Vector2> OnCameraMove;
     public event Action<float> OnCameraZoom;
 
     // Eventos de gameplay
     public event Action OnPause;
     public event Action OnRestart;
-    public event Action OnClear;
     public event Action OnToggleCell;
     public event Action OnAutoSim;
 
@@ -36,7 +35,7 @@ public class InputManager : MonoBehaviour
 
         controls = new PlayerController();
 
-        // C·mara
+        // Cùmara
         controls.Camera.Move.performed += ctx => OnCameraMove?.Invoke(ctx.ReadValue<Vector2>());
         controls.Camera.Move.canceled += ctx => OnCameraMove?.Invoke(Vector2.zero);
         controls.Camera.Zoom.performed += ctx => OnCameraZoom?.Invoke(ctx.ReadValue<float>());
@@ -44,7 +43,6 @@ public class InputManager : MonoBehaviour
 
         controls.Gameplay.Pause.performed += _ => OnPause?.Invoke();
         controls.Gameplay.Restart.performed += _ => OnRestart?.Invoke();
-        controls.Gameplay.Clear.performed += _ => OnClear?.Invoke();
         controls.Gameplay.ToggleCell.performed += _ => OnToggleCell?.Invoke();
 
         var autoSim = controls.asset.FindActionMap("Gameplay").FindAction("AutoSim");
