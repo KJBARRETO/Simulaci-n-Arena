@@ -11,7 +11,7 @@ public class CameraManager : MonoBehaviour
     public float minZoom = 2f;
     public float maxZoom = 30f;
 
-    // Mismo tamaño que el tablero del GameManager (80 x 60).
+   
     [Header("Tamaño del tablero")]
     public float anchoVista = 80f;
     public float altoVista = 60f;
@@ -24,7 +24,7 @@ public class CameraManager : MonoBehaviour
     {
         cam = Camera.main;
 
-        // Centro de la camara = centro del tablero. Zoom inicial = todo el alto (60).
+       
         maxZoom = altoVista * 0.5f;
         cam.transform.position = new Vector3(anchoVista * 0.5f, altoVista * 0.5f, cam.transform.position.z);
         cam.orthographicSize = maxZoom;
@@ -40,8 +40,7 @@ public class CameraManager : MonoBehaviour
         HandleZoom();
     }
 
-    // Recorta el Game a 80 x 60 (4:3). Asi el fondo, el tablero y lo que ve
-    // la camara miden lo mismo, aunque la ventana sea mas ancha.
+   
     void AjustarRecortePantalla()
     {
         if (cam == null) return;
