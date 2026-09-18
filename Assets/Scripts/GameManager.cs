@@ -13,7 +13,6 @@ public enum EstadoCelda
 public class GameManager : MonoBehaviour
 {
     // COSAS QUE CONFIGURAS ANTES DE JUGAR 
-  
 
     [Header("Configuracion inicial (no cambia en ejecucion)")]
     [FormerlySerializedAs("width")]
@@ -53,11 +52,13 @@ public class GameManager : MonoBehaviour
 
     // De que columna esta cayendo la arena.
     // -1 = todavia no clickeaste, entonces se elige una al azar.
-    // Si clickeas, se guarda el numero de esa columna.
+    // Si clickeas con el izquierdo, se guarda el numero de esa columna.
     private int columnaSeleccionada = -1;
 
-    // La imagen del tablero. Todo se dibuja aca:
-    // una casilla del tablero = un puntito de color.
+    // Click derecho: enciende o apaga la lluvia automatica de arena.
+    private bool simulacionAutomatica = false;
+
+ 
     private Texture2D textura;
 
     // START se ejecuta UNA vez, cuando apretas Play
@@ -69,27 +70,22 @@ public class GameManager : MonoBehaviour
         // Creamos el tablero con el ancho y alto que pusimos arriba.
         grilla = new EstadoCelda[ancho, alto];
         generacionActual = 0;
-        columnaSeleccionada = -1; // nadie clickeo todavia
+        columnaSeleccionada = -1;
+        simulacionAutomatica = false;
 
-        // Las teclas P (pausa), E (borrar) y R (reiniciar) 
-        // avisando el InputManager. El click del mouse lo leemos nosotros mas abajo, en Update.
+        // Solo se suscribe a los eventos del InputManager.
         if (InputManager.Instance != null)
         {
             InputManager.Instance.OnPause += AlternarPausa;
             InputManager.Instance.OnRestart += ReiniciarSimulacion;
             InputManager.Instance.OnClear += LimpiarSimulacion;
+            InputManager.Instance.OnToggleCell += PonerArenaEnMouse;
+            InputManager.Instance.OnAutoSim += AlternarAutomatica;
         }
-
-        // Prepara la imagen donde se va a ver el tablero.
         ConstruirTextura();
 
-        // Todas las casillas empiezan vacias.
+        // Todas las casillas empiezan vacias. No aparece arena hasta que el usuario clickee.
         VaciarGrilla();
-
-        // Para que al dar Play ya se vea arena:
-        // elijo una columna al azar y pongo un grano ARRIBA.
-        int columnaInicial = Random.Range(0, ancho);
-        grilla[columnaInicial, alto - 1] = EstadoCelda.Arena;
     }
     // UPDATE  se ejecuta TODO el tiempo, muchas veces por segundo
     // Hace 3 cosas, siempre en este orden:
@@ -98,18 +94,19 @@ public class GameManager : MonoBehaviour
     // 3) de vez en cuando deja caer la arena un pasito
     void Update()
     {
-        // 1) Si hay click, recordamos en que columna fue.
-        LeerClickDelMouse();
+        // 1) Si el InputManager dice que el izquierdo sigue apretado, seguimos pintando.
+        if (InputManager.Instance != null && InputManager.Instance.EstaPintando)
+            PonerArenaEnMouse();
 
         // 2) Pintamos el tablero tal como esta ahora.
         DibujarGrilla();
 
         // 3) Esperamos un poquito y recien ahi movemos la arena.
         //    Asi no cae a mil por hora. Si se baja  tiempoEntrePasos, cae mas rapido.
-        temporizador += Time.deltaTime; // Time.deltaTime = cuanto tardo este frame
+        temporizador += Time.deltaTime; 
         if (temporizador >= tiempoEntrePasos)
         {
-            // Aparece un grano nuevo arriba (de tu columna, o de una al azar).
+            // Solo suelta arena nueva si hay click izquierdo o modo automatico (derecho).
             SoltarArenaDesdeArriba();
 
             // Mueve todos los granos un casillero, si pueden.
@@ -157,14 +154,14 @@ public class GameManager : MonoBehaviour
                 bool izqLibre = EstaVacia(diagIzqX, abajoY);
                 bool derLibre = EstaVacia(diagDerX, abajoY);
 
-                // Regla 1: si abajo no hay nada, cae derecho.
+                // si abajo no hay nada, cae derecho.
                 if (abajoLibre)
                 {
                     MoverArena(x, y, abajoX, abajoY);
                     continue; // este grano ya se movio, pasamos al siguiente
                 }
 
-                // Regla 2: abajo hay algo, entonces intenta resbalar de costado.
+              // abajo hay algo, entonces intenta resbalar de costado.
                 // Si puede ir a los dos lados, tira una moneda (mitad y mitad).
                 if (izqLibre && derLibre)
                 {
@@ -189,7 +186,7 @@ public class GameManager : MonoBehaviour
                     continue;
                 }
 
-                // Regla 3: las tres casillas de abajo estan ocupadas.
+                //las tres casillas de abajo estan ocupadas.
                 // El grano se queda quieto. Asi se va apilando
             }
         }
@@ -197,71 +194,50 @@ public class GameManager : MonoBehaviour
 
     // CLICK elige desde que COLUMNA cae la arena
    
-    // El mouse te da una posicion en la pantalla (por ejemplo
-    // "pixel 800, 400"). El tablero usa otros numeros:
-    // columna 0, 1, 2... y fila 0, 1, 2...
-    // Hay que traducir el click de "donde esta el mouse en la
-    // pantalla" a "que casilla del tablero es esa".
-   
-    void LeerClickDelMouse()
+    void PonerArenaEnMouse()
     {
-        // Si no hay mouse, no hacemos nada.
-        if (Mouse.current == null) return;
+        Vector3 posicionMundo;
+        if (Mouse.current != null)
+            posicionMundo = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+        else
+            posicionMundo = Camera.main.transform.position;
 
-        // Solo nos importa mientras el boton izquierdo este apretado.
-        // Si lo tenes sostenido, la arena sigue saliendo de esa columna.
-        if (!Mouse.current.leftButton.isPressed) return;
-
-        // Traducimos: posicion en la pantalla -> posicion en el juego.
-        Vector3 posicionMundo = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
-
-        // Sacamos la parte decimal. Si el click cayo en 17.8,
-        // la casilla es la 17 (no la 18).
         int x = Mathf.FloorToInt(posicionMundo.x);
         int y = Mathf.FloorToInt(posicionMundo.y);
 
-        // Si clickeaste afuera del tablero, se ignora.
         if (x < 0 || x >= ancho || y < 0 || y >= alto) return;
 
-        // Guardamos la COLUMNA, no la fila.
-        // Da igual si clickeaste arriba o abajo: la arena
-        // siempre aparece en el TECHO de esa columna.
-        // (En Conway el click prendia o apagaba esa casilla exacta.)
+        grilla[x, y] = EstadoCelda.Arena;
         columnaSeleccionada = x;
+    }
+
+    // Click derecho (AutoSim): prende o apaga la Arena automatica.
+    void AlternarAutomatica()
+    {
+        simulacionAutomatica = !simulacionAutomatica;
+        Debug.Log(simulacionAutomatica ? "Simulaci?n autom?tica: ON" : "Simulaci?n autom?tica: OFF");
     }
 
     // Pone un grano nuevo en el techo de una columna.
     // Si esa casilla de arriba ya tiene arena, no pone otro encima.
     void SoltarArenaDesdeArriba()
     {
-        int columna;
+     
+        if (!simulacionAutomatica) return;
 
-        // Si estas clickeando, usamos la columna que elegiste.
-        bool hayClick = Mouse.current != null && Mouse.current.leftButton.isPressed;
-        if (hayClick && columnaSeleccionada >= 0 && columnaSeleccionada < ancho)
-        {
-            columna = columnaSeleccionada;
-        }
-        else
-        {
-            // Nadie esta clickeando: esperamos un poco y
-            // soltamos arena de una columna al azar.
-            temporizadorArenaAutomatica += tiempoEntrePasos;
-            if (temporizadorArenaAutomatica < tiempoEntreArenaAutomatica) return;
-            temporizadorArenaAutomatica = 0f;
-            columna = Random.Range(0, ancho);
-        }
+        temporizadorArenaAutomatica += tiempoEntrePasos;
+        if (temporizadorArenaAutomatica < tiempoEntreArenaAutomatica) return;
+        temporizadorArenaAutomatica = 0f;
 
-        int arriba = alto - 1; // el techo del tablero
+        int columna = Random.Range(0, ancho);
+        int arriba = alto - 1;
         if (EstaVacia(columna, arriba))
         {
             grilla[columna, arriba] = EstadoCelda.Arena;
         }
     }
 
-    // Recorre el tablero y pinta cada casilla:
-    // arena = colorArena, vacio = colorVacio.
-    // "ya podes mostrar esto en pantalla".
+    // Recorre el tablero y pinta cada casilla
     void DibujarGrilla()
     {
         for (int y = 0; y < alto; y++)
@@ -287,7 +263,6 @@ public class GameManager : MonoBehaviour
     }
 
     // El grano desaparece de aca y aparece alla.
-    // Es como mover una ficha de un casillero a otro.
     void MoverArena(int origenX, int origenY, int destinoX, int destinoY)
     {
         grilla[origenX, origenY] = EstadoCelda.Vacia;
@@ -300,7 +275,7 @@ public class GameManager : MonoBehaviour
     void ConstruirTextura()
     {
         textura = new Texture2D(ancho, alto, TextureFormat.RGBA32, false);
-        textura.filterMode = FilterMode.Point; // puntitos nítidos, no borrosos
+        textura.filterMode = FilterMode.Point; // puntitos nitidos, no borrosos
         textura.wrapMode = TextureWrapMode.Clamp;
 
         Sprite sprite = Sprite.Create(
@@ -330,7 +305,7 @@ public class GameManager : MonoBehaviour
     void AlternarPausa()
     {
         enabled = !enabled;
-        Debug.Log(enabled ? "Simulación reanudada" : "Simulación pausada");
+        Debug.Log(enabled ? "Simulaci?n reanudada" : "Simulaci?n pausada");
     }
 
     // Tecla E: borra toda la arena.
@@ -338,9 +313,10 @@ public class GameManager : MonoBehaviour
     {
         VaciarGrilla();
         columnaSeleccionada = -1;
+        simulacionAutomatica = false;
         generacionActual = 0;
         temporizador = 0f;
-        Debug.Log("Limpiando simulación...");
+        Debug.Log("Limpiando simulaci?n...");
     }
 
     // Tecla R: borra todo y tira un grano nuevo desde arriba.
@@ -348,16 +324,14 @@ public class GameManager : MonoBehaviour
     {
         VaciarGrilla();
         columnaSeleccionada = -1;
+        simulacionAutomatica = false;
         generacionActual = 0;
         temporizador = 0f;
-        int columnaInicial = Random.Range(0, ancho);
-        grilla[columnaInicial, alto - 1] = EstadoCelda.Arena;
-        Debug.Log("Reiniciando simulación...");
+        Debug.Log("Reiniciando simulaci?n...");
     }
 
     // Escribe en la consola: generacion N y cuantos granos hay.
-    // Ese numero no deberia bajar solo: la arena no desaparece,
-    // solo se mueve o se apila.
+   
     void MostrarResumenConsola()
     {
         int particulasActivas = 0;
@@ -369,6 +343,6 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        Debug.Log($"[Generación {generacionActual}] Partículas de arena activas: {particulasActivas}");
+        Debug.Log($"[Generaci?n {generacionActual}] Part?culas de arena activas: {particulasActivas}");
     }
 }

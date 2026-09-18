@@ -263,6 +263,15 @@ public partial class @PlayerController: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""AutoSim"",
+                    ""type"": ""Button"",
+                    ""id"": ""c4e8f1a2-7b3d-4e9a-8c1f-2d5a6b7c8d9e"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -353,6 +362,28 @@ public partial class @PlayerController: IInputActionCollection2, IDisposable
                     ""action"": ""ToggleCell"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""9d2c4e8a-1b5f-4c70-a3e6-8f0d12b4c7a9"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""AutoSim"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6b8e2a41-0c3d-4f15-9e7a-2d4c8b1f0a53"",
+                    ""path"": ""<Gamepad>/buttonWest"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""AutoSim"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -369,6 +400,7 @@ public partial class @PlayerController: IInputActionCollection2, IDisposable
         m_Gameplay_Restart = m_Gameplay.FindAction("Restart", throwIfNotFound: true);
         m_Gameplay_Clear = m_Gameplay.FindAction("Clear", throwIfNotFound: true);
         m_Gameplay_ToggleCell = m_Gameplay.FindAction("ToggleCell", throwIfNotFound: true);
+        m_Gameplay_AutoSim = m_Gameplay.FindAction("AutoSim", throwIfNotFound: true);
     }
 
     ~@PlayerController()
@@ -561,6 +593,7 @@ public partial class @PlayerController: IInputActionCollection2, IDisposable
     private readonly InputAction m_Gameplay_Restart;
     private readonly InputAction m_Gameplay_Clear;
     private readonly InputAction m_Gameplay_ToggleCell;
+    private readonly InputAction m_Gameplay_AutoSim;
     /// <summary>
     /// Provides access to input actions defined in input action map "Gameplay".
     /// </summary>
@@ -588,6 +621,10 @@ public partial class @PlayerController: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Gameplay/ToggleCell".
         /// </summary>
         public InputAction @ToggleCell => m_Wrapper.m_Gameplay_ToggleCell;
+        /// <summary>
+        /// Provides access to the underlying input action "Gameplay/AutoSim".
+        /// </summary>
+        public InputAction @AutoSim => m_Wrapper.m_Gameplay_AutoSim;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -626,6 +663,9 @@ public partial class @PlayerController: IInputActionCollection2, IDisposable
             @ToggleCell.started += instance.OnToggleCell;
             @ToggleCell.performed += instance.OnToggleCell;
             @ToggleCell.canceled += instance.OnToggleCell;
+            @AutoSim.started += instance.OnAutoSim;
+            @AutoSim.performed += instance.OnAutoSim;
+            @AutoSim.canceled += instance.OnAutoSim;
         }
 
         /// <summary>
@@ -649,6 +689,9 @@ public partial class @PlayerController: IInputActionCollection2, IDisposable
             @ToggleCell.started -= instance.OnToggleCell;
             @ToggleCell.performed -= instance.OnToggleCell;
             @ToggleCell.canceled -= instance.OnToggleCell;
+            @AutoSim.started -= instance.OnAutoSim;
+            @AutoSim.performed -= instance.OnAutoSim;
+            @AutoSim.canceled -= instance.OnAutoSim;
         }
 
         /// <summary>
@@ -739,5 +782,12 @@ public partial class @PlayerController: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnToggleCell(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "AutoSim" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAutoSim(InputAction.CallbackContext context);
     }
 }

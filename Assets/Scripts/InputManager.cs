@@ -1,8 +1,7 @@
 using UnityEngine;
 using System;
 
-// Traduce Input System a eventos. No conoce la grilla ni las reglas:
-// GameManager pinta arena al recibir OnToggleCell (antes pintaba celulas vivas).
+
 public class InputManager : MonoBehaviour
 {
     public static InputManager Instance { get; private set; }
@@ -13,11 +12,17 @@ public class InputManager : MonoBehaviour
     public event Action<Vector2> OnCameraMove;
     public event Action<float> OnCameraZoom;
 
-    // Eventos de gameplay 
+    // Eventos de gameplay
     public event Action OnPause;
     public event Action OnRestart;
     public event Action OnClear;
     public event Action OnToggleCell;
+    public event Action OnAutoSim;
+
+    // True mientras el izquierdo (ToggleCell) esta apretado.
+    // Igual que la camara guarda el stick: el Input System dice si sigue presionado.
+    public bool EstaPintando =>
+        controls != null && controls.Gameplay.ToggleCell.IsPressed();
 
     void Awake()
     {
@@ -37,11 +42,14 @@ public class InputManager : MonoBehaviour
         controls.Camera.Zoom.performed += ctx => OnCameraZoom?.Invoke(ctx.ReadValue<float>());
         controls.Camera.Zoom.canceled += ctx => OnCameraZoom?.Invoke(0);
 
-        // Gameplay
         controls.Gameplay.Pause.performed += _ => OnPause?.Invoke();
         controls.Gameplay.Restart.performed += _ => OnRestart?.Invoke();
         controls.Gameplay.Clear.performed += _ => OnClear?.Invoke();
         controls.Gameplay.ToggleCell.performed += _ => OnToggleCell?.Invoke();
+
+        var autoSim = controls.asset.FindActionMap("Gameplay").FindAction("AutoSim");
+        if (autoSim != null)
+            autoSim.performed += _ => OnAutoSim?.Invoke();
     }
 
     void OnEnable()
